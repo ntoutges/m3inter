@@ -1,0 +1,70 @@
+/* Connect Overlay stuff */
+.connect-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+
+    .connect-modal {
+        background: #2a2a2a;
+        color: #fff;
+        padding: 24px 32px;
+        border-radius: 8px;
+        width: 300px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        text-align: center;
+        font-family: sans-serif;
+    }
+
+    .connect-modal h2 {
+        margin-top: 0;
+        font-size: 20px;
+    }
+
+    .connect-modal p {
+        font-size: 14px;
+        margin: 12px 0 20px;
+        color: #ccc;
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .modal-buttons button {
+        flex: 1;
+        padding: 8px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .serial-btn {
+        background: #4caf50;
+        color: white;
+    }
+
+    .socket-btn {
+        background: #4c81af;
+        color: white;
+    }
+
+    .modal-error {
+        color: #ff9191;
+        margin: 12px 0 0;
+    }
+
+    .modal-error.modal-info {
+        color: #c6ded0;
+    }
+
+    .modal-error:empty {
+        display: none;
+    }
+}

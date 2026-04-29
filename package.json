@@ -3,6 +3,7 @@
         "dev": "vite"
     },
     "devDependencies": {
+        "@types/w3c-web-serial": "^1.0.8",
         "vite": "^7.1.6"
     }
 }

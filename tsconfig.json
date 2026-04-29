@@ -8,6 +8,6 @@
         "strict": true,
         "allowJs": true,
         "allowSyntheticDefaultImports": true,
-        "types": ["vite/client"]
+        "types": ["vite/client", "w3c-web-serial"]
     }
 }
