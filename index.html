@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>m3inter</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=chevron_left,chevron_right,visibility,visibility_off" />
+
+    <script src="script.ts" type="module" defer></script>
+
+</head>
+
+<body>
+
+    <!-- Store visibility states -->
+    <input type="checkbox" id="toggle-perf-graph" hidden checked>
+    <input type="checkbox" id="toggle-gizmo" hidden checked>
+    <input type="checkbox" id="toggle-explorer" hidden checked>
+    <input type="checkbox" id="toggle-ui" hidden checked>
+
+    <div id="main-content">
+
+        <div id="grid-container" class="grid"></div>
+
+        <!-- Overlay UI -->
+        <div id="ui-layer">
+
+            <!-- Top-left: Performance -->
+            <label for="toggle-perf-graph" class="panel panel-top-left" id="perf-panel">
+                <div class="panel-title">Performance</div>
+
+                <div class="stat fps">
+                    FPS: <span id="fps-avg">0</span>
+                </div>
+                <div class="stat-sub fps">
+                    L5%: <span id="fps-low5">0</span> |
+                    L1%: <span id="fps-low1">0</span>
+                </div>
+
+                <div class="stat latency">
+                    Latency: <span id="lat-avg">0</span> ms
+                </div>
+                <div class="stat-sub latency">
+                    L5%: <span id="lat-low5">0</span> |
+                    L1%: <span id="lat-low1">0</span>
+                </div>
+
+                <canvas id="perf-graph"></canvas>
+            </label>
+
+            <!-- Top-right: Camera (gizmo + position) -->
+            <label for="toggle-gizmo" class="panel panel-top-right" id="camera-panel">
+                <canvas id="camera-gizmo"></canvas>
+
+                <div class="camera-pos">
+                    (
+                    <span id="cam-x">0</span>,
+                    <span id="cam-y">0</span>,
+                    <span id="cam-z">0</span>
+                    )
+                </div>
+            </label>
+
+            <!-- Bottom-left: Device Info -->
+            <div class="panel panel-bottom-left" id="device-panel">
+                <div class="panel-title">Device</div>
+                <div>
+                    Port: <span id="com-port">N/A</span>
+                </div>
+                <div>
+                    Status:
+                    <span id="connection-status" class="status offline">
+                        Disconnected
+                    </span>
+                </div>
+            </div>
+
+            <!-- Right: Explorer toggle -->
+            <label for="toggle-explorer" id="explorer-toggle">
+                <span class="material-symbols-outlined on-active">chevron_right</span>
+                <span class="material-symbols-outlined on-inactive">chevron_left</span>
+            </label>
+
+            <!-- Toast container -->
+            <div id="toast-container"></div>
+
+        </div>
+
+        <label for="toggle-ui" id="ui-toggle">
+            <span class="material-symbols-outlined on-active">visibility</span>
+            <span class="material-symbols-outlined on-inactive">visibility_off</span>
+        </label>
+
+    </div>
+
+    <!-- Explorer panel -->
+    <div id="explorer-panel">
+        <div class="panel-title">Scene Setup</div>
+
+        <textarea id="command-input" placeholder="Enter commands..."></textarea>
+
+        <!-- Syntax errors -->
+        <div id="syntax-errors"></div>
+
+        <button id="run-command">Run</button>
+
+        <div class="panel-title">Active Setup</div>
+
+        <div id="command-display-container">
+
+            <div id="command-display">
+
+                <!-- Example line -->
+                <div class="cmd-line">cube 0 0 0</div>
+                <div class="cmd-line">line 0 0 0</div>
+                <div class="cmd-line active">shape 0 0 0</div>
+                <div class="cmd-line">obj = (</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">&nbsp;&nbsp;&nbsp;&nbsp;x = (0,0,0), DIM, long line that takes up some sasfd</div>
+                <div class="cmd-line">)</div>
+            </div>
+
+        </div>
+
+        <!-- Runtime errors -->
+        <div id="runtime-errors"></div>
+    </div>
+</body>
+
+</html>

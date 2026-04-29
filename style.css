@@ -1,0 +1,458 @@
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0px;
+    padding: 0px;
+    background-color: black;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+    overflow: hidden;
+
+    display: flex;
+}
+
+#main-content {
+    flex-grow: 1;
+    position: relative;
+}
+
+#grid-container {
+    box-sizing: border-box;
+}
+
+/* Overlay layer */
+#ui-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* Panels */
+.panel {
+    position: absolute;
+    background: rgba(20, 20, 20, 0.7);
+    backdrop-filter: blur(6px);
+    color: white;
+    font-family: sans-serif;
+    font-size: 13px;
+    padding: 10px;
+    border-radius: 8px;
+    pointer-events: auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.panel-title {
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+/* Positions */
+.panel-top-left {
+    top: 10px;
+    left: 10px;
+}
+
+.panel-top-right {
+    top: 10px;
+    right: 10px;
+    text-align: right;
+}
+
+.panel-bottom-left {
+    bottom: 10px;
+    left: 10px;
+}
+
+.panel-bottom-center {
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Camera panel */
+#camera-panel canvas {
+    width: 80px;
+    height: 80px;
+    display: block;
+}
+
+#camera-panel {
+    cursor: pointer;
+}
+
+.camera-pos {
+    margin-top: 5px;
+    font-size: 12px;
+    opacity: 0.85;
+
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+
+    user-select: none;
+}
+
+/* Performance graph */
+#perf-graph {
+    width: 100%;
+    height: 100%;
+}
+
+/* Stats text */
+.stat {
+    margin-top: 4px;
+}
+
+.stat-sub {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+/* Device status */
+.status.online {
+    color: #4caf50;
+}
+
+.status.offline {
+    color: #f44336;
+}
+
+/* Explorer */
+#explorer-panel {
+    --width: 300px;
+    width: var(--width);
+    box-sizing: border-box;
+
+    height: 100%;
+    background: #111;
+    color: white;
+    padding: 10px;
+    transition: right 0.25s ease;
+    pointer-events: auto;
+
+    /* Hide by default */
+    margin-right: calc(-1 * var(--width));
+
+    transition: margin-right 200ms;
+
+    display: flex;
+    flex-direction: column;
+}
+
+#command-input {
+    width: 100%;
+    height: 100px;
+    background: #222;
+    color: white;
+    border: none;
+    margin-bottom: 8px;
+
+    resize: none;
+
+    height: 0px;
+    flex-grow: 1;
+}
+
+#command-display-container {
+    background: #222;
+    padding: 2px;
+
+    height: 0px;
+    flex-grow: 1;
+
+    overflow-y: auto;
+}
+
+#command-display {
+    counter-reset: line;
+
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0px 5px;
+}
+
+/* Each line increments counter */
+.cmd-line {
+    counter-increment: line;
+
+    grid-column: 1 / 3;
+    display: grid;
+    grid-template-columns: subgrid;
+
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 12px;
+    border-radius: 4px;
+
+    white-space: pre-wrap;
+
+    position: relative;
+}
+
+/* Line number (auto-generated) */
+.cmd-line::before {
+    font-variant-numeric: tabular-nums;
+    content: counter(line);
+
+    width: 24px;
+    text-align: right;
+    margin-right: 8px;
+
+    opacity: 0.5;
+}
+
+/* Active line styling */
+.cmd-line.active {
+    background: rgba(76, 175, 80, 0.15);
+    border-left: 2px solid #4caf50;
+}
+
+/* Error sections */
+#syntax-errors,
+#runtime-errors {
+    font-size: 12px;
+    margin: 6px 0;
+    padding: 6px;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #f44336;
+    min-height: 18px;
+
+    &:empty {
+        display: none;
+    }
+}
+
+/* Toasts */
+#toast-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast {
+    background: rgba(30, 30, 30, 0.9);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    animation: fadein 0.2s ease;
+}
+
+.toast.error {
+    border-left: 4px solid #f44336;
+}
+
+.toast.warn {
+    border-left: 4px solid #ff9800;
+}
+
+.toast.info {
+    border-left: 4px solid #2196f3;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#perf-panel {
+    display: grid;
+    grid-template-areas:
+        "title graph"
+        "fps graph"
+        "fps-sub graph"
+        "latency graph"
+        "latency-sub graph";
+    grid-template-rows: 1fr;
+
+    gap: 0px 4px;
+    height: 80px;
+    cursor: pointer;
+
+    & > .panel-title {
+        grid-area: title;
+    }
+
+    & > .fps {
+        grid-area: fps;
+    }
+    & > .stat-sub.fps {
+        grid-area: fps-sub;
+    }
+
+    & > .latency {
+        grid-area: latency;
+    }
+    & > .stat-sub.latency {
+        grid-area: latency-sub;
+    }
+
+    #perf-graph {
+        grid-area: graph;
+    }
+}
+
+/* Toggle: Performance graph */
+#toggle-perf-graph:not(:checked) ~ #main-content #perf-graph {
+    display: none !important;
+}
+
+/* Toggle: Gizmo */
+#toggle-gizmo:not(:checked) ~ #main-content #camera-gizmo {
+    display: none !important;
+}
+
+/* Toggle: Explorer panel */
+#toggle-explorer:checked ~ #explorer-panel {
+    margin-right: 0;
+}
+
+#toggle-explorer:checked ~ #main-content #explorer-toggle {
+    .on-active {
+        display: inline-block;
+    }
+    .on-inactive {
+        display: none;
+    }
+}
+
+/* Hide entire UI layer when unchecked */
+#toggle-ui:not(:checked) ~ #main-content #ui-layer {
+    display: none;
+}
+
+/* Also hide explorer panel */
+#toggle-ui:not(:checked) ~ #explorer-panel {
+    display: none;
+}
+
+/* Default: UI visible */
+#ui-toggle .on-inactive {
+    display: none;
+}
+
+/* When UI hidden */
+#toggle-ui:not(:checked) ~ #main-content #ui-toggle {
+    .on-active {
+        display: none;
+    }
+    .on-inactive {
+        display: inline-block;
+    }
+}
+
+button,
+#explorer-toggle {
+    all: unset;
+    cursor: pointer;
+    pointer-events: auto;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 10px;
+    border-radius: 6px;
+
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+
+    transition:
+        background 0.15s,
+        transform 0.1s;
+}
+
+/* Hide active by default */
+#explorer-toggle .on-active {
+    display: none;
+}
+
+/* Hover / active */
+button:hover,
+#explorer-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+button:active,
+#explorer-toggle:active {
+    transform: scale(0.96);
+}
+
+/* Primary action (Run button) */
+#run-command {
+    background: #2e7d32;
+}
+
+#run-command:hover {
+    background: #388e3c;
+}
+
+/* Icon button */
+#explorer-toggle {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    z-index: 100;
+}
+
+#device-panel {
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+}
+
+#ui-toggle {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    z-index: 200;
+    translate: -50% 0px;
+
+    cursor: pointer;
+    pointer-events: auto;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px;
+    border-radius: 6px;
+
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+
+    transition:
+        background 200ms,
+        left 200ms,
+        transform 200ms,
+        opacity 200ms;
+}
+
+#ui-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#ui-toggle:active {
+    transform: scale(0.96);
+}
+
+#toggle-ui:not(:checked) ~ #main-content #ui-toggle {
+    opacity: 0.2;
+
+    left: 10px;
+    translate: 0px 0px;
+}

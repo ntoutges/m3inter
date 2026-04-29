@@ -1,0 +1,62 @@
+.grid {
+    position: relative;
+}
+
+.grid canvas {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: unset;
+}
+
+.grid-highlights {
+    position: absolute;
+    background: radial-gradient(transparent, #c6c46187);
+    box-shadow: 0px 0px 10px 5px #c6c46187;
+}
+
+/* Tooltip styling */
+.grid-tooltip {
+    position: absolute;
+    background: #222;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: sans-serif;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    translate: -100% -100%;
+}
+
+.grid-tooltip .tooltip-title {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.grid-tooltip .tooltip-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.grid-tooltip .tooltip-id {
+    opacity: 0.7;
+}
+
+.grid-tooltip .tooltip-state {
+    font-size: 12px;
+    color: gray;
+}
+
+.grid-tooltip .tooltip-state.on {
+    color: #4caf50; /* green dot for "on" */
+}
+
+.grid-tooltip .tooltip-state.off {
+    color: #f44336; /* red dot for "off" */
+}

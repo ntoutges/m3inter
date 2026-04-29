@@ -1,0 +1,136 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "properties": {
+        "config": {
+            "type": "array",
+            "items": {
+                "allOf": [
+                    {
+                        "$ref": "#/definitions/base"
+                    },
+
+                    {
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/addon_tile"
+                            },
+                            {
+                                "$ref": "#/definitions/addon_grid"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "required": ["config"],
+
+    "definitions": {
+        "base": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Human-readable name"
+                },
+                "size": {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "y": {
+                            "type": "number",
+                            "minimum": 0
+                        }
+                    },
+                    "required": ["x", "y"],
+                    "description": "The dimensions of this object"
+                },
+                "pos": {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": "number"
+                        },
+                        "y": {
+                            "type": "number"
+                        }
+                    },
+                    "required": ["x", "y"],
+                    "description": "The location of the top-left corner of this object"
+                },
+                "packet": {
+                    "type": "string",
+                    "pattern": "\\d+:\\d+",
+
+                    "description": "Indicate the byte that this tile pulls from"
+                },
+                "color": {
+                    "type": "object",
+                    "properties": {
+                        "on": {
+                            "type": "string",
+                            "description": "The tile color when ON"
+                        },
+                        "off": {
+                            "type": "string",
+                            "description": "The tile color when OFF"
+                        }
+                    },
+                    "required": ["on", "off"],
+                    "description": "Determine custom tile colors for on/off states"
+                }
+            },
+            "required": ["name", "type", "size", "pos", "packet"]
+        },
+
+        "addon_tile": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "tile"
+                }
+            },
+            "required": ["type"]
+        },
+
+        "addon_grid": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "grid"
+                },
+                "tile": {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                        },
+                        "y": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                        }
+                    },
+                    "required": ["x", "y"],
+                    "description": "Specify the size of each tile. Note that the base `size` is used for determining the width/height of the grid in tiles"
+                },
+                "invx": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true: ids are given to tiles increasing from right-to-left"
+                },
+                "invy": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true: ids are given to tiles increasing from bottom-to-top"
+                }
+            },
+            "required": ["type", "tile"]
+        }
+    }
+}
