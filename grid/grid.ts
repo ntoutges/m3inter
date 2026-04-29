@@ -22,6 +22,7 @@ type grid_grid = {
     tile: { x: number; y: number };
     invx?: boolean;
     invy?: boolean;
+    mode?: "vvl" | "vhl" | "hvl" | "hhl"; // (V)ertical/(H)orizontal bits in (V)ertical/(H)orizontal lines
 } & grid_base;
 
 type grid_setup = grid_base[];
@@ -108,14 +109,13 @@ export class Grid {
     }
 
     private buildGrid(item: grid_grid) {
+        const mode = item.mode ?? "vvl";
+
         const cols = item.size.x / item.tile.x;
         const rows = item.size.y / item.tile.y;
 
         const [startByteStr, startIndexStr] = item.packet.split(":");
         const [startByte, startIndex] = [+startByteStr, +startIndexStr];
-
-        let byte = startByte;
-        let index = startIndex;
 
         const rowStep = item.invy ? -1 : 1;
         const rowStart = item.invy ? rows - 1 : 0;
@@ -123,10 +123,40 @@ export class Grid {
         const colStep = item.invx ? -1 : 1;
         const colStart = item.invx ? cols - 1 : 0;
 
+        let colI = 0;
         for (let col = colStart; col < cols && col >= 0; col += colStep) {
+            let rowI = 0;
             for (let row = rowStart; row < rows && row >= 0; row += rowStep) {
                 const x = item.pos.x + col * item.tile.x;
                 const y = item.pos.y + row * item.tile.y;
+
+                // Get byte/index from row/col given the current mode
+                let index: number = 0;
+                let byte: number = 0;
+                switch (mode) {
+                    default:
+                    case "vvl":
+                    case "hhl":
+                        // Overall accumulator
+                        index =
+                            mode === "hhl"
+                                ? rowI * item.size.x + colI
+                                : rowI + colI * item.size.y;
+
+                        // Compress to byte/index
+                        byte = Math.floor(index / 8);
+                        index = index % 8;
+                        break;
+
+                    case "vhl": // Vertical bits, horizontal lines
+                        index = rowI % 8;
+                        byte = colI + Math.floor(rowI / 8) * item.size.x;
+                        break;
+                    case "hvl": // Horizontal bits, vertical lines
+                        index = colI % 8;
+                        byte = rowI + Math.floor(colI / 8) * item.size.y;
+                        break;
+                }
 
                 this._addTile(byte, index, {
                     bounds: {
@@ -138,20 +168,9 @@ export class Grid {
                     name: `${item.name} ${col}/${row}`,
                     color: item.color,
                 });
-
-                // Get next bit
-                index++;
-                if (index == 8) {
-                    index = 0;
-                    byte++;
-                }
+                rowI++;
             }
-
-            // Advance to the next available byte
-            if (index != 0) {
-                index = 0;
-                byte++;
-            }
+            colI++;
         }
     }
 
@@ -287,7 +306,7 @@ export class Grid {
         const tiles = this.tiles.get(id);
         if (!tiles) return; // Invalid tile; Ignore
 
-        const padding = 1;
+        const padding = 0;
 
         const offset = padding / 2;
         for (let tile of tiles) {

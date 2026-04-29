@@ -128,6 +128,10 @@
                     "type": "boolean",
                     "default": false,
                     "description": "If true: ids are given to tiles increasing from bottom-to-top"
+                },
+                "mode": {
+                    "enum": ["vvl", "vhl", "hvl", "hhl"],
+                    "default": "vvl"
                 }
             },
             "required": ["type", "tile"]

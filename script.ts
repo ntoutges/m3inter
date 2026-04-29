@@ -26,7 +26,7 @@ const cCb: msg_cb_t = {
     acc: {
         cb: handleData,
         bytes: 1024,
-        timeout: 0,
+        timeout: 500,
     },
 };
 let cHandle: handle_t | null = null;
