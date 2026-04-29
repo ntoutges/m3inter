@@ -105,11 +105,20 @@ type serial_handle_t = {
     port: string;
 } & base_handle_t;
 
+type socket_handle_t = {
+    type: "socket";
+
+    /**
+     * Human-readable identifier for the connected socket server
+     */
+    url: string;
+} & base_handle_t;
+
 /**
  * Union of all supported transport handles.
  * (Currently only serial, but structured for future expansion)
  */
-export type handle_t = serial_handle_t;
+export type handle_t = serial_handle_t | socket_handle_t;
 
 /**
  * Establish a connection to a serial device using the Web Serial API.
@@ -256,6 +265,155 @@ export async function handleSerial(
             writer.write(bytes).catch((err) => {
                 console.error("Write error:", err);
             });
+        },
+    };
+}
+
+/**
+ * Establish a connection to a WebSocket endpoint.
+ *
+ * This mirrors the behavior of `handleSerial`, providing:
+ *  - Raw byte callbacks
+ *  - Optional accumulation (size / timeout based)
+ *  - Unified handle interface
+ *
+ * @param url WebSocket endpoint (ws:// or wss://)
+ * @param cb Callback configuration
+ *
+ * @returns
+ *  - On success: a socket handle
+ *  - On failure: error string
+ */
+export async function handleSocket(
+    url: string,
+    cb: msg_cb_t,
+): Promise<string | socket_handle_t> {
+    let ws: WebSocket;
+
+    try {
+        ws = new WebSocket(url);
+        ws.binaryType = "arraybuffer";
+    } catch (err) {
+        return "Failed to create WebSocket";
+    }
+
+    let running = true;
+
+    // Accumulator state (same as serial)
+    let accBuffer: number[] = [];
+    let accTimer: number | null = null;
+
+    function flushAccumulator() {
+        if (!cb.acc || accBuffer.length === 0) return;
+
+        const data = new Uint8Array(accBuffer);
+        accBuffer = [];
+
+        cb.acc.cb(data);
+    }
+
+    function scheduleTimeout() {
+        if (!cb.acc || cb.acc.timeout === 0) return;
+
+        if (accTimer !== null) {
+            clearTimeout(accTimer);
+        }
+
+        accTimer = window.setTimeout(() => {
+            flushAccumulator();
+            accTimer = null;
+        }, cb.acc.timeout);
+    }
+
+    function handleBytes(value: Uint8Array) {
+        if (!running) return;
+
+        // Raw callback
+        if (cb.raw) {
+            cb.raw(value);
+        }
+
+        // Accumulator logic
+        if (cb.acc) {
+            for (const byte of value) {
+                accBuffer.push(byte);
+
+                if (accBuffer.length === cb.acc.bytes) {
+                    flushAccumulator();
+                }
+            }
+
+            scheduleTimeout();
+        }
+    }
+
+    // Wrap connection open in a promise
+    const openPromise = new Promise<void>((resolve, reject) => {
+        ws.onopen = () => resolve();
+        ws.onerror = () => reject("WebSocket connection failed");
+    });
+
+    try {
+        await openPromise;
+    } catch (err) {
+        return typeof err === "string" ? err : "WebSocket failed to open";
+    }
+
+    // Message handler
+    ws.onmessage = async (event) => {
+        try {
+            if (event.data instanceof ArrayBuffer) {
+                handleBytes(new Uint8Array(event.data));
+            } else if (event.data instanceof Blob) {
+                const buf = await event.data.arrayBuffer();
+                handleBytes(new Uint8Array(buf));
+            } else if (typeof event.data === "string") {
+                // Optional: treat as UTF-8 bytes
+                handleBytes(new TextEncoder().encode(event.data));
+            }
+        } catch (err) {
+            console.error("WebSocket message handling error:", err);
+        }
+    };
+
+    ws.onclose = () => {
+        running = false;
+        flushAccumulator();
+        cb.close();
+    };
+
+    ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+    };
+
+    async function close() {
+        if (!running) return;
+        running = false;
+
+        try {
+            if (accTimer !== null) {
+                clearTimeout(accTimer);
+                accTimer = null;
+            }
+
+            flushAccumulator();
+
+            ws.close();
+        } catch (err) {
+            console.warn("Error during socket close:", err);
+        }
+    }
+
+    return {
+        type: "socket",
+        url,
+        close,
+        write: (bytes: Uint8Array) => {
+            try {
+                ws.send(new Blob([new Uint8Array(bytes)]));
+            } catch (err) {
+                console.error("WebSocket write error:", err);
+            }
         },
     };
 }

@@ -1,5 +1,10 @@
 import { Connect } from "./connect/connect.js";
-import { handle_t, handleSerial, msg_cb_t } from "./connect/handler.js";
+import {
+    handle_t,
+    handleSerial,
+    handleSocket,
+    msg_cb_t,
+} from "./connect/handler.js";
 import { Grid } from "./grid/grid.js";
 import { config } from "./setup.json";
 
@@ -21,7 +26,7 @@ const cCb: msg_cb_t = {
     acc: {
         cb: handleData,
         bytes: 1024,
-        timeout: 100,
+        timeout: 0,
     },
 };
 let cHandle: handle_t | null = null;
@@ -36,8 +41,8 @@ async function handleConnect(mode: "ser" | "sok") {
     let handleOrError: handle_t | string | null = null;
 
     switch (mode) {
-        // Currently invalid option
         case "sok":
+            handleOrError = await handleSocket("http://localhost:3000", cCb);
             break;
 
         case "ser":
@@ -67,5 +72,6 @@ function handleClose() {
 }
 
 function handleData(data: Uint8Array) {
-    console.log(Array.from(data));
+    g.update(Array.from(data));
+    g.render();
 }
