@@ -1,3 +1,4 @@
+import grid from "./grid.html?raw";
 import "./grid.css";
 
 type grid_base = {
@@ -33,8 +34,6 @@ type grid_bounds = {
     w: number;
     h: number;
 };
-
-import grid from "./grid.html?raw";
 
 export class Grid {
     private readonly element: HTMLElement;

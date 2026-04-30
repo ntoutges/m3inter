@@ -32,23 +32,7 @@
             <label for="toggle-perf-graph" class="panel panel-top-left" id="perf-panel">
                 <div class="panel-title">Performance</div>
 
-                <div class="stat fps">
-                    FPS: <span id="fps-avg">0</span>
-                </div>
-                <div class="stat-sub fps">
-                    L5%: <span id="fps-low5">0</span> |
-                    L1%: <span id="fps-low1">0</span>
-                </div>
-
-                <div class="stat latency">
-                    Latency: <span id="lat-avg">0</span> ms
-                </div>
-                <div class="stat-sub latency">
-                    L5%: <span id="lat-low5">0</span> |
-                    L1%: <span id="lat-low1">0</span>
-                </div>
-
-                <canvas id="perf-graph"></canvas>
+                <div id="stat-container"></div>
             </label>
 
             <!-- Top-right: Camera (gizmo + position) -->

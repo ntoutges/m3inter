@@ -1,0 +1,32 @@
+.stat {
+    display: grid;
+    grid-template-columns: 1fr auto;
+
+    font-family: sans-serif;
+    font-size: 12px;
+    color: white;
+}
+
+.stat canvas {
+    width: 120px;
+    margin-left: 6px;
+}
+
+.stat-name {
+    grid-column: 1 / -1;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.stat-sub {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.stat-breakdown {
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
