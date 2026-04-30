@@ -2,9 +2,13 @@
  * Define an object interactor
  */
 
-import { Interactor } from "./interactor.js";
+import {
+    Interactor,
+    PuppetInteractor,
+    registerPuppetClass,
+} from "./interactor.js";
 import { Quat, Vec3 } from "./prim.js";
-import { SegInteractor } from "./seg.js";
+import { PSegInteractor, SegInteractor } from "./seg.js";
 
 /**
  * Define an interactor for micro3d objects
@@ -29,7 +33,7 @@ export class ObjInteractor extends Interactor {
         return this.queue(this._id);
     }
 
-    parent(other: ObjInteractor) {
+    parent(other: ObjInteractor | number) {
         return this.queue(this._parent, other);
     }
 
@@ -83,8 +87,8 @@ export class ObjInteractor extends Interactor {
         return this._vid!;
     }
 
-    private async _parent(other: ObjInteractor): Promise<void> {
-        const otherId = await other.id();
+    private async _parent(other: ObjInteractor | number): Promise<void> {
+        const otherId = typeof other === "number" ? other : await other.id();
         await this.cmd("parent", this._id(), otherId);
     }
 
@@ -140,6 +144,75 @@ export class ObjInteractor extends Interactor {
     }
 }
 
+export class PObjInteractor extends PuppetInteractor {
+    constructor() {
+        super("obj");
+    }
+
+    /**
+     * Get the id of this object
+     */
+    id(): Promise<number> {
+        return this.call("id");
+    }
+
+    async parent(other: ObjInteractor | number) {
+        const id = typeof other === "number" ? other : await other.id();
+        return await this.call("parent", id);
+    }
+
+    pos(x: number, y: number, z: number): Promise<void>;
+    pos(vec: Vec3): Promise<void>;
+    pos(xOrVec: number | Vec3, y?: number, z?: number): Promise<void> {
+        if (xOrVec instanceof Vec3) {
+            z = xOrVec.z;
+            y = xOrVec.y;
+            xOrVec = xOrVec.x;
+        }
+
+        return this.call("pos", xOrVec, y, z);
+    }
+
+    pivot(x: number, y: number, z: number, w: number): Promise<void>;
+    pivot(quat: Quat): Promise<void>;
+    pivot(
+        xOrQuat: number | Quat,
+        y?: number,
+        z?: number,
+        w?: number,
+    ): Promise<void> {
+        if (xOrQuat instanceof Quat) {
+            w = xOrQuat.w;
+            z = xOrQuat.z;
+            y = xOrQuat.y;
+            xOrQuat = xOrQuat.x;
+        }
+
+        return this.call("pivot", xOrQuat, y, z, w);
+    }
+
+    visible(visible: boolean) {
+        return this.call("visible", visible);
+    }
+
+    rlock(x: boolean, y: boolean, z: boolean) {
+        return this.call("rlock", x, y, z);
+    }
+
+    segment() {
+        return new PSegInteractor(this);
+    }
+
+    clear() {
+        return this.call("clear");
+    }
+}
+
 export function createObjInteractor() {
     return new ObjInteractor();
 }
+
+export function createPObjInteractor() {
+    return new PObjInteractor();
+}
+registerPuppetClass("obj", createPObjInteractor);

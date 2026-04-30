@@ -2,6 +2,9 @@
  * Define a base class used to interact with the renderer via a `cmd` interface
  */
 
+import { bridgeCall, bridgeCreate, bridgeDestroy } from "./bridge";
+export { onBridgeRx, onBridgeTx, registerPuppetClass } from "./bridge"; // Export main bridge callbacks
+
 /**
  * Id of the last request sent. In the range [0, 64)
  */
@@ -28,7 +31,7 @@ let txCb: ((data: Uint8Array) => void) | null = null;
 /**
  * The base class for implementing all renderer interaction classes
  */
-export class Interactor {
+export abstract class Interactor {
     private _timeout: number = 0;
     private _qstate: "queuing" | "success" | "fail" = "queuing";
     private _queue: {
@@ -116,6 +119,25 @@ export class Interactor {
     }
 }
 
+let nextPid = 1;
+export abstract class PuppetInteractor {
+    private readonly pid: number;
+
+    constructor(className: string, ...args: any[]) {
+        this.pid = nextPid++;
+
+        bridgeCreate(this.pid, className, args);
+    }
+
+    protected call(method: string, ...args: any[]): Promise<any> {
+        return bridgeCall(this.pid, method, args);
+    }
+
+    destroy() {
+        bridgeDestroy(this.pid);
+    }
+}
+
 /**
  * Execute a command and wait for response
  * @param timeout   The maximum time to wait for a response, in milliseconds. Set to 0 to disable timeout. (Note that tiemout condition can still trigger on rid exhaustion)
@@ -131,7 +153,7 @@ export function execCmd(
     return new Promise((resolve, reject) => {
         if (!txCb) {
             console.error("No tx callback registered");
-            reject();
+            reject("No tx callback registered");
             return;
         }
 

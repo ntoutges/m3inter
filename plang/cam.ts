@@ -3,7 +3,11 @@
  * Controls the global camera state (position + rotation)
  */
 
-import { Interactor } from "./interactor.js";
+import {
+    Interactor,
+    PuppetInteractor,
+    registerPuppetClass,
+} from "./interactor.js";
 import { Vec3, Quat } from "./prim.js";
 
 /**
@@ -90,9 +94,57 @@ export class CamInteractor extends Interactor {
     }
 }
 
+export class PCamInteractor extends PuppetInteractor {
+    constructor() {
+        super("cam");
+    }
+
+    /**
+     * Set camera position
+     */
+    pos(x: number, y: number, z: number): Promise<void>;
+    pos(vec: Vec3): Promise<void>;
+    async pos(xOrVec: number | Vec3, y?: number, z?: number): Promise<void> {
+        if (xOrVec instanceof Vec3) {
+            z = xOrVec.z;
+            y = xOrVec.y;
+            xOrVec = xOrVec.x;
+        }
+
+        this.call("pos", xOrVec, y, z);
+    }
+
+    /**
+     * Set camera rotation (pivot quaternion)
+     */
+    pivot(x: number, y: number, z: number, w: number): Promise<void>;
+    pivot(quat: Quat): Promise<void>;
+    async pivot(
+        xOrQuat: number | Quat,
+        y?: number,
+        z?: number,
+        w?: number,
+    ): Promise<void> {
+        if (xOrQuat instanceof Quat) {
+            w = xOrQuat.w;
+            z = xOrQuat.z;
+            y = xOrQuat.y;
+            xOrQuat = xOrQuat.x;
+        }
+
+        this.call("pivot", xOrQuat, y, z, w);
+    }
+}
+
 /**
  * Factory helper
  */
 export function createCamInteractor() {
     return new CamInteractor();
 }
+
+export function createPCamInteractor() {
+    return new PCamInteractor();
+}
+
+registerPuppetClass("cam", createPCamInteractor);

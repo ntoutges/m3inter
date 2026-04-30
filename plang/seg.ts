@@ -3,9 +3,13 @@
  * Represents a segment belonging to an object
  */
 
-import { Interactor } from "./interactor.js";
+import {
+    Interactor,
+    PuppetInteractor,
+    registerPuppetClass,
+} from "./interactor.js";
 import { Vec3 } from "./prim.js";
-import { ObjInteractor } from "./obj.js";
+import { ObjInteractor, PObjInteractor } from "./obj.js";
 
 /**
  * Allowed segment colors
@@ -110,6 +114,53 @@ export class SegInteractor extends Interactor {
     }
 }
 
+export class PSegInteractor extends PuppetInteractor {
+    constructor(obj: PObjInteractor) {
+        super("seg");
+    }
+
+    /**
+     * Get the id of this object
+     */
+    id(): Promise<number> {
+        return this.call("id");
+    }
+
+    /**
+     * Set segment offset
+     */
+    offset(x: number, y: number, z: number): Promise<void>;
+    offset(vec: Vec3): Promise<void>;
+    async offset(xOrVec: number | Vec3, y?: number, z?: number) {
+        if (xOrVec instanceof Vec3) {
+            z = xOrVec.z;
+            y = xOrVec.y;
+            xOrVec = xOrVec.x;
+        }
+
+        return this.call("offset", xOrVec, y, z);
+    }
+
+    /**
+     * Set whether segment is absolute or relative
+     */
+    absolute(isAbsolute: boolean): Promise<void> {
+        return this.call("absolute", isAbsolute);
+    }
+
+    /**
+     * Set segment color
+     */
+    color(color: SegColor): Promise<void> {
+        return this.call("color", color);
+    }
+}
+
 export function createSegInteractor(obj: ObjInteractor) {
     return new SegInteractor(obj);
 }
+
+export function createPSegInteractor(obj: PObjInteractor) {
+    return new PSegInteractor(obj);
+}
+registerPuppetClass("obj", createPSegInteractor);

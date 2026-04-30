@@ -21,6 +21,8 @@ const portName = $("#com-port") as HTMLElement;
 const statusWord = $("#connection-status") as HTMLElement;
 const gizmo_canvas = $("#camera-gizmo") as HTMLCanvasElement;
 const gizmo_ctx = gizmo_canvas.getContext("2d")!;
+const commandInput = $("#command-input") as HTMLTextAreaElement;
+const commandButton = $("#run-command") as HTMLButtonElement;
 
 // Define custom UI elements
 const g = new Grid($("#grid-container")!, config);
@@ -345,3 +347,57 @@ cam.onChange(() => {
     $("#cam-y")!.textContent = Math.round(vec.y).toString();
     $("#cam-z")!.textContent = Math.round(vec.z).toString();
 });
+
+// Code editing
+
+// Save in-progress commands before reloading
+window.addEventListener("beforeunload", () => {
+    localStorage.setItem("command-input", commandInput.value);
+});
+
+// Load in-progress commands after loading
+commandInput.value = localStorage.getItem("command-input") ?? "";
+
+// Run commands
+commandButton.addEventListener("click", runCode);
+
+let codeRunner: Worker | null = null;
+function runCode() {
+    // Kill the current runner
+    if (codeRunner) {
+        codeRunner.terminate();
+        codeRunner = null;
+    }
+
+    // Create new running environment
+    codeRunner = new Worker("./worker.ts", { type: "module" });
+
+    // Run code
+    codeRunner.postMessage({
+        type: "code",
+        code: commandInput.value,
+    });
+
+    codeRunner.onmessage = onCodeMessage;
+}
+
+/**
+ * Called on message receipt from code runner
+ */
+function onCodeMessage(ev: MessageEvent) {
+    if (!codeRunner) return; // Cannot receive message from non-existant runner; Ignore!
+    console.log(ev.data);
+
+    switch (ev.data.type) {
+        case "error":
+            codeRunner.terminate();
+            codeRunner = null;
+
+            console.error(ev.data.error);
+            break;
+        case "done":
+            codeRunner.terminate();
+            codeRunner = null;
+            break;
+    }
+}
