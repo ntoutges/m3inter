@@ -257,9 +257,11 @@ export async function handleSerial(
         }
     }
 
+    const info = port.getInfo();
+
     return {
         type: "serial",
-        port: "@TODO",
+        port: `${info.usbVendorId?.toString(16) ?? "XXXX"}:${info.usbProductId?.toString(16) ?? "YY"}`,
         close,
         write: (bytes: Uint8Array) => {
             writer.write(bytes).catch((err) => {

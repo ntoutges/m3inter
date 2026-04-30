@@ -10,6 +10,7 @@ import { config } from "./setup.json";
 import { Stat } from "./stat/stat.js";
 
 const $ = document.querySelector.bind(document);
+const bytes = 1024;
 
 // Define elements as globals for ease-of-use
 const devicePanel = $("#device-panel") as HTMLElement;
@@ -44,7 +45,7 @@ const cCb: msg_cb_t = {
     close: handleClose,
     acc: {
         cb: handleData,
-        bytes: 1024,
+        bytes: bytes + 1, // +1 for header byte
         timeout: 500,
     },
 };
@@ -118,7 +119,7 @@ function handleData(data: Uint8Array) {
     const now = performance.now();
 
     // Update grid
-    g.update(Array.from(data));
+    g.update(Array.from(data.subarray(1)));
     g.render();
 
     // Update stats

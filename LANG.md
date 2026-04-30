@@ -157,6 +157,7 @@ Valid constants are in the following list
 
 #### Object Methods
 
+- `parent(obj)`: Set the parent object of this object. Leave `obj` empty to reset the parent to the origin
 - `pos(x, y, z)` | `pos(vec)`: Set the position of the object in worldspace. If given as positional arguments, axes not provided are unchanged
 - `pivot(x, y, z, w)` | `pivot(quat)`: Set the rotation of the object in worldspace. If given as positional arguments, axes not provided default to 0, and the final quaternion is normalized
 - `visible(<boolean>)`: Set the visibility of the object
