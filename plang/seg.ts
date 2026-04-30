@@ -32,11 +32,17 @@ export class SegInteractor extends Interactor {
         super("seg");
         this.obj = obj;
 
-        this.timeout(100);
+        this.timeout(0);
 
-        this.cmd("create")
-            .then(this._load.bind(this))
-            .catch(this._load.bind(this, null));
+        obj.id()
+            .then((id) => {
+                this.cmd("create", id)
+                    .then(this._load.bind(this))
+                    .catch(this._load.bind(this, null));
+            })
+            .catch(() => {
+                this._load(null);
+            });
     }
 
     /**
@@ -85,23 +91,25 @@ export class SegInteractor extends Interactor {
         await this.cmd(
             "offset",
             objId,
-            this.id,
+            this._id(),
             Math.round(x),
             Math.round(y),
             Math.round(z),
         );
+
+        console.log("DONE!");
     }
 
     private async _absolute(isAbsolute: boolean) {
         const objId = await this.obj.id();
 
-        await this.cmd("absolute", objId, this.id, isAbsolute ? 1 : 0);
+        await this.cmd("absolute", objId, this._id(), isAbsolute ? 1 : 0);
     }
 
     private async _color(color: SegColor) {
         const objId = await this.obj.id();
 
-        await this.cmd("color", objId, this.id, color);
+        await this.cmd("color", objId, this._id(), color);
     }
 
     /**
@@ -116,7 +124,7 @@ export class SegInteractor extends Interactor {
 
 export class PSegInteractor extends PuppetInteractor {
     constructor(obj: PObjInteractor) {
-        super("seg");
+        super("seg", obj);
     }
 
     /**
@@ -163,4 +171,3 @@ export function createSegInteractor(obj: ObjInteractor) {
 export function createPSegInteractor(obj: PObjInteractor) {
     return new PSegInteractor(obj);
 }
-registerPuppetClass("obj", createPSegInteractor);

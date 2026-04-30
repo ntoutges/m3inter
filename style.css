@@ -218,11 +218,11 @@ body {
 /* Toasts */
 #toast-container {
     position: absolute;
-    bottom: 20px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: 8px;
     pointer-events: none;
 }
@@ -233,7 +233,20 @@ body {
     padding: 8px 14px;
     border-radius: 6px;
     font-size: 13px;
-    animation: fadein 0.2s ease;
+
+    animation: toast-in 0.2s ease;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+
+    pointer-events: auto;
+    user-select: none;
+    cursor: pointer;
+}
+
+.toast.hide {
+    opacity: 0;
+    transform: translateY(-10px);
 }
 
 .toast.error {
@@ -251,7 +264,7 @@ body {
 @keyframes fadein {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(-10px);
     }
     to {
         opacity: 1;

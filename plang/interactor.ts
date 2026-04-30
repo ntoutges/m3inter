@@ -75,7 +75,7 @@ export abstract class Interactor {
     ): Promise<Awaited<U>> {
         return new Promise<Awaited<U>>((resolve, reject) => {
             if (this._qstate === "success") {
-                const resp = fn(...args);
+                const resp = fn.apply(this, args);
 
                 // Attempt to resolve if PromiseLike
                 if (
@@ -110,7 +110,7 @@ export abstract class Interactor {
 
         // Run all queued functions
         for (const { args, fn, resolve, reject } of this._queue) {
-            if (success) resolve(fn(args));
+            if (success) resolve(fn.apply(this, args));
             else reject();
         }
 
@@ -121,7 +121,7 @@ export abstract class Interactor {
 
 let nextPid = 1;
 export abstract class PuppetInteractor {
-    private readonly pid: number;
+    readonly pid: number;
 
     constructor(className: string, ...args: any[]) {
         this.pid = nextPid++;
@@ -235,6 +235,7 @@ function execReject(id: number) {
 
     req.reject();
     outstanding.delete(id);
+    console.log(`REJECT ${id}`);
 }
 
 /**
@@ -260,6 +261,7 @@ function execResolve(
     req.resolve(error ? null : status);
     outstanding.delete(id);
 
+    console.log(`RESOLVE ${id}`);
     return performance.now() - req.dispatch;
 }
 
@@ -277,8 +279,12 @@ export function onTx(cb: (data: Uint8Array) => void) {
  * @param data  The received data
  * @returns     The latency between dispatch and now, or null if invalid
  */
-export function onRx(data: Uint8Array): number | null {
-    if (data.length !== 2) return null; // Expecting 2 bytes: [header, response]
+export function onRx(data: Uint8Array): {
+    latency: number | null;
+    error: boolean;
+    code: number;
+} {
+    if (data.length !== 2) return { latency: null, error: false, code: 0 }; // Expecting 2 bytes: [header, response]
 
     // Extract id + error status from data
     const header = data[0];
@@ -286,5 +292,9 @@ export function onRx(data: Uint8Array): number | null {
     const id = header & 0x3f; // Lower 6 bits are id
     const error = header & 0x40 ? true : false; // Bit 6 is error flag
 
-    return execResolve(id, error, data[1]);
+    return {
+        latency: execResolve(id, error, data[1]),
+        error: error,
+        code: data[1],
+    };
 }

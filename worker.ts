@@ -5,13 +5,18 @@
  * @todo Fill out this file with the requisite information to load/run commands
  */
 
-import { execute } from "./executor.js";
+import { execute, onBridgeRx } from "./executor.js";
 
 function handleMessage(ev: MessageEvent) {
     switch (ev.data.type) {
         // Code to run
         case "code":
             runCode(ev.data.code);
+            break;
+
+        case "msg":
+            onBridgeRx(ev.data.msg);
+            break;
     }
 }
 

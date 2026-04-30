@@ -8,9 +8,18 @@ import {
 import { Grid } from "./grid/grid.js";
 import { config } from "./setup.json";
 import { Stat } from "./stat/stat.js";
-import { onTx, onRx } from "./plang/interactor.js";
-import { cam } from "./executor.js";
+import {
+    onTx,
+    onRx,
+    onBridgeRx,
+    onBridgeTx,
+    registerPuppetClass,
+} from "./plang/interactor.js";
 import { Quat, Vec3 } from "./plang/prim.js";
+import { toast } from "./toast.js";
+import { createObjInteractor } from "./plang/obj.js";
+import { createSegInteractor } from "./plang/seg.js";
+import { CamInteractor } from "./plang/cam.js";
 
 const $ = document.querySelector.bind(document);
 const bytes = 1024;
@@ -22,6 +31,7 @@ const statusWord = $("#connection-status") as HTMLElement;
 const gizmo_canvas = $("#camera-gizmo") as HTMLCanvasElement;
 const gizmo_ctx = gizmo_canvas.getContext("2d")!;
 const commandInput = $("#command-input") as HTMLTextAreaElement;
+const commandDisplay = $("#command-display") as HTMLElement;
 const commandButton = $("#run-command") as HTMLButtonElement;
 
 // Define custom UI elements
@@ -47,7 +57,16 @@ const s = new Stat($("#stat-container")!, {
 const conn = new Connect(handleConnect);
 conn.show();
 
-onTx((b) => cHandle?.write(b));
+onTx((b) => {
+    cHandle?.write(b);
+    console.log(
+        `TX: ${Array.from(b)
+            .map((x) => String.fromCharCode(x))
+            .join("")}`,
+    );
+});
+
+const cam = new CamInteractor();
 
 // Define connection handle
 const cCb: msg_cb_t = {
@@ -121,21 +140,45 @@ function handleClose() {
     statusWord.textContent = "Disconnected";
     statusWord.classList.remove("online");
     statusWord.classList.add("offline");
+
+    commandDisplay.innerHTML = "";
 }
+
+let frameDebounce: null | number = null;
+let frameData: Uint8Array | null = null;
 
 function handleData(data: Uint8Array) {
     const now = performance.now();
 
     if (data[0] === 0x00) {
         // Update grid
-        g.update(Array.from(data.subarray(1)));
-        g.render();
+        if (frameDebounce === null) {
+            g.update(Array.from(data.subarray(1)));
+            g.render();
 
-        // Update stat
-        s.update("FPS", 1000 / (now - lastFrame));
-        lastFrame = now;
+            frameDebounce = setTimeout(() => {
+                frameDebounce = null;
+
+                // More data to render!
+                if (frameData !== null) {
+                    handleData(frameData);
+                    frameData = null;
+                }
+            }, 0);
+
+            // Update stat
+            s.update("FPS", 1000 / (now - lastFrame));
+            lastFrame = now;
+        } else {
+            frameData = data;
+        }
     } else {
-        const latency = onRx(data);
+        const { latency, error, code } = onRx(data);
+
+        if (error) {
+            toast.error(`Renderer failed with code ${code}`, 0);
+        }
+
         if (latency !== null) s.update("Latency", latency);
     }
 }
@@ -372,13 +415,40 @@ function runCode() {
     // Create new running environment
     codeRunner = new Worker("./worker.ts", { type: "module" });
 
+    const code = commandInput.value;
+
+    // Trim empty start/end lines
+    const lines = code
+        .replace(/^(\s*\n)+|(\s*\n)+$/g, "")
+        .replace(/(\s*)/, "")
+        .split("\n");
+
+    // Push active code to element
+    commandDisplay.innerHTML = "";
+    for (const line of lines) {
+        const lineEl = document.createElement("div");
+        lineEl.classList.add("cmd-line");
+        lineEl.textContent = line;
+
+        commandDisplay.append(lineEl);
+    }
+
     // Run code
     codeRunner.postMessage({
         type: "code",
-        code: commandInput.value,
+        code,
     });
 
     codeRunner.onmessage = onCodeMessage;
+    codeRunner.onerror = (ev: ErrorEvent) => {
+        if (!codeRunner) return;
+
+        codeRunner?.terminate();
+        codeRunner = null;
+        commandDisplay.innerHTML = "";
+
+        toast.error(ev.error);
+    };
 }
 
 /**
@@ -386,18 +456,38 @@ function runCode() {
  */
 function onCodeMessage(ev: MessageEvent) {
     if (!codeRunner) return; // Cannot receive message from non-existant runner; Ignore!
-    console.log(ev.data);
 
     switch (ev.data.type) {
         case "error":
             codeRunner.terminate();
             codeRunner = null;
+            commandDisplay.innerHTML = "";
 
-            console.error(ev.data.error);
+            toast.error(ev.data.error);
             break;
         case "done":
             codeRunner.terminate();
             codeRunner = null;
+            commandDisplay.innerHTML = "";
+            break;
+
+        // Forward message to bridge handler
+        case "msg":
+            onBridgeRx(ev.data.msg);
             break;
     }
 }
+
+// Forward message back over bridge
+onBridgeTx((msg) => {
+    if (!codeRunner) return; // No code runner to respond to messages; Ignore!
+    codeRunner.postMessage({
+        type: "msg",
+        msg: msg,
+    });
+});
+
+// Register factories for bridge
+registerPuppetClass("obj", createObjInteractor);
+registerPuppetClass("seg", createSegInteractor);
+registerPuppetClass("cam", () => cam); // Treat camera object as a singleton (only one camera in scene)

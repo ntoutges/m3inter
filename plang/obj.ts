@@ -19,7 +19,7 @@ export class ObjInteractor extends Interactor {
 
     constructor() {
         super("obj");
-        this.timeout(100);
+        this.timeout(0);
 
         this.cmd("create")
             .then(this._load.bind(this))
@@ -71,8 +71,8 @@ export class ObjInteractor extends Interactor {
         return this.queue(this._visible, visible);
     }
 
-    rlock(x: boolean, y: boolean, z: boolean) {
-        return this.queue(this._rlock, x, y, z);
+    rlock(x: boolean, y: boolean) {
+        return this.queue(this._rlock, x, y);
     }
 
     segment() {
@@ -123,8 +123,8 @@ export class ObjInteractor extends Interactor {
         await this.cmd("visible", this._id(), visible ? 1 : 0);
     }
 
-    private async _rlock(x: boolean, y: boolean, z: boolean): Promise<void> {
-        const rlock = (x ? "x" : "") + (y ? "y" : "") + (z ? "z" : "");
+    private async _rlock(x: boolean, y: boolean): Promise<void> {
+        const rlock = (x ? "x" : "") + (y ? "y" : "");
 
         if (rlock) await this.cmd("visible", `-${rlock}`);
         else await this.cmd("visible");
@@ -196,7 +196,7 @@ export class PObjInteractor extends PuppetInteractor {
     }
 
     rlock(x: boolean, y: boolean, z: boolean) {
-        return this.call("rlock", x, y, z);
+        return this.call("rlock", x, y);
     }
 
     segment() {
@@ -215,4 +215,3 @@ export function createObjInteractor() {
 export function createPObjInteractor() {
     return new PObjInteractor();
 }
-registerPuppetClass("obj", createPObjInteractor);

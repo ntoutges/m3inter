@@ -21,7 +21,7 @@ export class CamInteractor extends Interactor {
     constructor() {
         super("cam");
 
-        this.timeout(100);
+        this.timeout(0);
     }
 
     /**
@@ -92,6 +92,11 @@ export class CamInteractor extends Interactor {
         this._listeners.push(cb);
         cb();
     }
+
+    // UNOFFICIAL COMMAND
+    clear() {
+        return this.cmd("clear");
+    }
 }
 
 export class PCamInteractor extends PuppetInteractor {
@@ -134,6 +139,11 @@ export class PCamInteractor extends PuppetInteractor {
 
         this.call("pivot", xOrQuat, y, z, w);
     }
+
+    // UNOFFICIAL COMMAND
+    clear() {
+        this.call("clear");
+    }
 }
 
 /**
@@ -146,5 +156,3 @@ export function createCamInteractor() {
 export function createPCamInteractor() {
     return new PCamInteractor();
 }
-
-registerPuppetClass("cam", createPCamInteractor);

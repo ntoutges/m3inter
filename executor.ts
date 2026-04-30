@@ -2,15 +2,27 @@
  * Execute interactor code
  */
 
-import { CamInteractor } from "./plang/cam.js";
+import { createPCamInteractor } from "./plang/cam.js";
 import { createPObjInteractor } from "./plang/obj.js";
 import { createPSegInteractor } from "./plang/seg.js";
 import { Vec3, Quat } from "./plang/prim.js";
+import { onBridgeTx } from "./plang/bridge.js";
 
-export const cam = new CamInteractor();
+export { onBridgeRx } from "./plang/bridge.js";
+
+onBridgeTx((msg) => {
+    postMessage({ type: "msg", msg });
+});
 
 const OBJ = createPObjInteractor;
 const SEG = createPSegInteractor;
+const cam = createPCamInteractor();
+
+// Color definitions
+const FULL = 3;
+const DIM = 2;
+const DARK = 1;
+const INVISIBLE = 0;
 
 const VEC = (x: number, y: number, z: number) => new Vec3(x, y, z);
 const QUAT = (x: number, y: number, z: number, w: number) =>
@@ -28,7 +40,7 @@ function sleep(ms: number) {
  * Clear the scene of _all_ objects
  */
 function clear() {
-    // @TODO
+    cam.clear();
 }
 
 const env = {
@@ -38,6 +50,12 @@ const env = {
     QUAT,
     sleep,
     clear,
+    cam,
+
+    FULL,
+    DIM,
+    DARK,
+    INVISIBLE,
 };
 
 /**

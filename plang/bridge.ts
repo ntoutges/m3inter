@@ -2,6 +2,8 @@
  * A bridge used to communicate between the worker threads and the main thread
  */
 
+import { PuppetInteractor } from "./interactor";
+
 type BridgeMessage =
     | { type: "create"; pid: number; class: string; args: any[] }
     | { type: "created"; pid: number }
@@ -25,7 +27,6 @@ function send(msg: BridgeMessage) {
         throw new Error("Bridge TX not registered");
     }
     txCb(msg);
-    console.log("Sending", msg);
 }
 
 let nextMid = 1;
@@ -45,6 +46,8 @@ export function registerPuppetClass(name: string, factory: Factory) {
  * @param args          The arguments to create the object with
  */
 export function bridgeCreate(pid: number, className: string, args: any[]) {
+    args = compressPuppetArgs(args);
+
     send({ type: "create", pid, class: className, args });
 }
 
@@ -83,6 +86,8 @@ export function bridgeCall(
 ): Promise<any> {
     const mid = nextMid++;
 
+    args = compressPuppetArgs(args);
+
     return new Promise((resolve, reject) => {
         pending.set(mid, { resolve, reject });
 
@@ -111,7 +116,13 @@ export function onBridgeRx(msg: BridgeMessage) {
                 return;
             }
 
-            const obj = factory(...msg.args);
+            let args = extractPuppetArgs(msg.args);
+            if (args === null) {
+                console.error("Failed to extract args in `create`");
+                args = msg.args;
+            }
+
+            const obj = factory(...args);
             objects.set(msg.pid, obj);
 
             send({ type: "created", pid: msg.pid });
@@ -130,8 +141,18 @@ export function onBridgeRx(msg: BridgeMessage) {
                 return;
             }
 
+            const args = extractPuppetArgs(msg.args);
+            if (args === null) {
+                send({
+                    type: "reject",
+                    mid: msg.mid,
+                    error: "Unable to extract args in `call`",
+                });
+                return;
+            }
+
             try {
-                const result = obj[msg.method](...msg.args);
+                const result = obj[msg.method](...args);
 
                 Promise.resolve(result)
                     .then((res) =>
@@ -190,4 +211,48 @@ export function onBridgeRx(msg: BridgeMessage) {
             // optional: handshake support
             break;
     }
+}
+
+/**
+ * Convert any arguments that are PuppetInteractor instances into references that can safely be sent
+ * @param args
+ * @returns
+ */
+function compressPuppetArgs(args: any[]): any[] {
+    const a: any[] = [];
+    for (const arg of args) {
+        // Change actual instance of puppet to reference
+        if (arg instanceof PuppetInteractor) {
+            a.push({
+                __$PUPPET__: arg.pid,
+            });
+        } else a.push(arg);
+    }
+
+    return a;
+}
+
+/**
+ * Convert any object with the one field __$PUPPET__ into the puppet that that references
+ */
+function extractPuppetArgs(a: any[]): any[] | null {
+    const args: any[] = [];
+    for (const arg of a) {
+        // Reference to existing object
+        if (
+            Object.keys(arg).length === 1 &&
+            Object.hasOwn(arg, "__$PUPPET__") &&
+            typeof arg.__$PUPPET__ === "number"
+        ) {
+            const obj = objects.get(arg.__$PUPPET__);
+
+            if (!obj) {
+                return null;
+            }
+
+            args.push(obj);
+        } else args.push(arg);
+    }
+
+    return args;
 }

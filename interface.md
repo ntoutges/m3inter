@@ -40,20 +40,20 @@ Available actions:
     - Set the r(otation) lock data of some object
     - Errors if unable to find object
 
-- segment `id`
-    - Create a new segment within an object
-    - Returns the id of the new segment within the object
-    - Errors if unable to find object/allocate space for the segment
 - clear `id`
     - Clear the segment memory of an object
     - Errors if unable to find the object
 
 ### seg
 
-`!seg <rid> <action> <objid> ...`
+`!seg <rid> <action> <objId> ...`
 
 Avaialble actions:
 
+- segment
+    - Create a new segment within an object
+    - Returns the id of the new segment within the object
+    - Errors if unable to find object/allocate space for the segment
 - offset `id, x, y, z`
     - Set the offset of this segment
     - Errors if unable to find the segment or its parent object
