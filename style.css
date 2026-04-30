@@ -264,8 +264,11 @@ body {
     display: none !important;
 }
 
-/* Toggle: Gizmo */
+/* Toggle: Gizmo + Controls */
 #toggle-gizmo:not(:checked) ~ #main-content #camera-gizmo {
+    display: none !important;
+}
+#toggle-gizmo:not(:checked) ~ #main-content .cam-group {
     display: none !important;
 }
 
@@ -410,4 +413,42 @@ button:active,
 
     left: 10px;
     translate: 0px 0px;
+}
+
+/* Camera controls container */
+.camera-controls {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    pointer-events: auto; /* important inside label */
+}
+
+/* Group rows */
+.cam-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+}
+
+/* Buttons (reuse your base button style, just tweak size) */
+.camera-controls button {
+    padding: 4px;
+    font-size: 16px;
+    border-radius: 6px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Icon sizing */
+.camera-controls .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* Optional: make rotation row slightly distinct */
+.cam-group:last-child {
+    opacity: 0.85;
 }

@@ -66,6 +66,36 @@ export type msg_cb_t = {
     };
 
     /**
+     * Smart accumulator (pull-based framing).
+     *
+     * Buffers incoming bytes and uses a user-provided function to decide
+     * when a complete message is available.
+     *
+     * The `bytes` function is called with the current buffer and should return:
+     *  - N > 0: emit N bytes as a message
+     *  - N <= 0 or N > buffer.length: do nothing (wait for more data)
+     *
+     * This allows implementation of:
+     *  - Length-prefixed protocols
+     *  - Delimiter-based parsing
+     *  - Custom binary framing
+     *
+     * Runs independently of `acc`.
+     */
+    smacc?: {
+        cb: raw_cb_t;
+
+        /** Idle timeout (ms). 0 disables timeout-based flushing */
+        timeout: number;
+
+        /**
+         * Determines how many bytes form a complete message.
+         * Receives the full buffer and returns the number of bytes to emit.
+         */
+        bytes: (buf: Uint8Array) => number;
+    };
+
+    /**
      * Called when the connection is closed or the read loop terminates.
      * This will fire on:
      *  - Manual close()
@@ -177,6 +207,10 @@ export async function handleSerial(
     let accBuffer: number[] = [];
     let accTimer: number | null = null;
 
+    // Smart accumulator state
+    let smaccBuffer: number[] = [];
+    let smaccTimer: number | null = null;
+
     function flushAccumulator() {
         if (!cb.acc || accBuffer.length === 0) return;
 
@@ -197,6 +231,46 @@ export async function handleSerial(
             flushAccumulator();
             accTimer = null;
         }, cb.acc.timeout);
+    }
+
+    function flushSmaccAll() {
+        if (!cb.smacc || smaccBuffer.length === 0) return;
+
+        const data = new Uint8Array(smaccBuffer);
+        smaccBuffer = [];
+
+        cb.smacc.cb(data);
+    }
+
+    function scheduleSmaccTimeout() {
+        if (!cb.smacc || cb.smacc.timeout === 0) return;
+
+        if (smaccTimer !== null) {
+            clearTimeout(smaccTimer);
+        }
+
+        smaccTimer = window.setTimeout(() => {
+            flushSmaccAll();
+            smaccTimer = null;
+        }, cb.smacc.timeout);
+    }
+
+    function processSmacc() {
+        if (!cb.smacc) return;
+
+        while (true) {
+            const buf = new Uint8Array(smaccBuffer);
+            const n = cb.smacc.bytes(buf);
+
+            if (n <= 0 || n > smaccBuffer.length) {
+                break;
+            }
+
+            const out = smaccBuffer.slice(0, n);
+            smaccBuffer = smaccBuffer.slice(n);
+
+            cb.smacc.cb(new Uint8Array(out));
+        }
     }
 
     // Read loop
@@ -225,6 +299,15 @@ export async function handleSerial(
 
                     scheduleTimeout();
                 }
+
+                if (cb.smacc) {
+                    for (const byte of value) {
+                        smaccBuffer.push(byte);
+                    }
+
+                    processSmacc();
+                    scheduleSmaccTimeout();
+                }
             }
         } catch (err) {
             console.error("Read loop error:", err);
@@ -242,8 +325,13 @@ export async function handleSerial(
                 clearTimeout(accTimer);
                 accTimer = null;
             }
-
             flushAccumulator();
+
+            if (smaccTimer !== null) {
+                clearTimeout(smaccTimer);
+                smaccTimer = null;
+            }
+            flushSmaccAll();
 
             await reader.cancel();
             reader.releaseLock();
@@ -305,6 +393,10 @@ export async function handleSocket(
     let accBuffer: number[] = [];
     let accTimer: number | null = null;
 
+    // Smart accumulator state
+    let smaccBuffer: number[] = [];
+    let smaccTimer: number | null = null;
+
     function flushAccumulator() {
         if (!cb.acc || accBuffer.length === 0) return;
 
@@ -327,6 +419,46 @@ export async function handleSocket(
         }, cb.acc.timeout);
     }
 
+    function flushSmaccAll() {
+        if (!cb.smacc || smaccBuffer.length === 0) return;
+
+        const data = new Uint8Array(smaccBuffer);
+        smaccBuffer = [];
+
+        cb.smacc.cb(data);
+    }
+
+    function scheduleSmaccTimeout() {
+        if (!cb.smacc || cb.smacc.timeout === 0) return;
+
+        if (smaccTimer !== null) {
+            clearTimeout(smaccTimer);
+        }
+
+        smaccTimer = window.setTimeout(() => {
+            flushSmaccAll();
+            smaccTimer = null;
+        }, cb.smacc.timeout);
+    }
+
+    function processSmacc() {
+        if (!cb.smacc) return;
+
+        while (true) {
+            const buf = new Uint8Array(smaccBuffer);
+            const n = cb.smacc.bytes(buf);
+
+            if (n <= 0 || n > smaccBuffer.length) {
+                break;
+            }
+
+            const out = smaccBuffer.slice(0, n);
+            smaccBuffer = smaccBuffer.slice(n);
+
+            cb.smacc.cb(new Uint8Array(out));
+        }
+    }
+
     function handleBytes(value: Uint8Array) {
         if (!running) return;
 
@@ -346,6 +478,15 @@ export async function handleSocket(
             }
 
             scheduleTimeout();
+        }
+
+        if (cb.smacc) {
+            for (const byte of value) {
+                smaccBuffer.push(byte);
+            }
+
+            processSmacc();
+            scheduleSmaccTimeout();
         }
     }
 
@@ -397,8 +538,13 @@ export async function handleSocket(
                 clearTimeout(accTimer);
                 accTimer = null;
             }
-
             flushAccumulator();
+
+            if (smaccTimer !== null) {
+                clearTimeout(smaccTimer);
+                smaccTimer = null;
+            }
+            flushSmaccAll();
 
             ws.close();
         } catch (err) {
