@@ -33,6 +33,7 @@ const gizmo_ctx = gizmo_canvas.getContext("2d")!;
 const commandInput = $("#command-input") as HTMLTextAreaElement;
 const commandDisplay = $("#command-display") as HTMLElement;
 const commandButton = $("#run-command") as HTMLButtonElement;
+const stopButton = $("#stop-command") as HTMLButtonElement;
 
 // Define custom UI elements
 const g = new Grid($("#grid-container")!, config);
@@ -432,6 +433,7 @@ commandInput.value = localStorage.getItem("command-input") ?? "";
 
 // Run commands
 commandButton.addEventListener("click", runCode);
+stopButton.addEventListener("click", stopCode);
 
 let codeRunner: Worker | null = null;
 function runCode() {
@@ -478,6 +480,15 @@ function runCode() {
 
         toast.error(ev.error);
     };
+}
+
+function stopCode() {
+    if (!codeRunner) return; // No code to stop
+
+    commandDisplay.innerHTML = "";
+
+    codeRunner.terminate();
+    codeRunner = null;
 }
 
 /**

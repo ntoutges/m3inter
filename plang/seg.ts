@@ -96,8 +96,6 @@ export class SegInteractor extends Interactor {
             Math.round(y),
             Math.round(z),
         );
-
-        console.log("DONE!");
     }
 
     private async _absolute(isAbsolute: boolean) {

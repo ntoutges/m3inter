@@ -370,6 +370,14 @@ button:active,
     background: #388e3c;
 }
 
+#stop-command {
+    background: #952f2f;
+}
+
+#stop-command:hover {
+    background: #a83c3c;
+}
+
 /* Icon button */
 #explorer-toggle {
     position: absolute;
