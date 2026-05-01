@@ -274,7 +274,7 @@ function updateCam(e: Event) {
         case "yaw-left": {
             const rotator = new Quat(
                 0,
-                Math.sin(pivotStep / 2),
+                -Math.sin(pivotStep / 2),
                 0,
                 Math.cos(pivotStep / 2),
             );
@@ -287,7 +287,7 @@ function updateCam(e: Event) {
         case "yaw-right": {
             const rotator = new Quat(
                 0,
-                -Math.sin(pivotStep / 2),
+                Math.sin(pivotStep / 2),
                 0,
                 Math.cos(pivotStep / 2),
             );
