@@ -6,7 +6,7 @@ import {
     msg_cb_t,
 } from "./connect/handler.js";
 import { Grid } from "./grid/grid.js";
-import { config } from "./setup.json";
+import setup from "./setup.json";
 import { Stat } from "./stat/stat.js";
 import {
     onTx,
@@ -36,7 +36,7 @@ const commandButton = $("#run-command") as HTMLButtonElement;
 const stopButton = $("#stop-command") as HTMLButtonElement;
 
 // Define custom UI elements
-const g = new Grid($("#grid-container")!, config);
+const g = new Grid($("#grid-container")!, setup);
 g.render();
 
 const s = new Stat($("#stat-container")!, {
@@ -562,3 +562,196 @@ onBridgeTx((msg) => {
 registerPuppetClass("obj", createObjInteractor);
 registerPuppetClass("seg", createSegInteractor);
 registerPuppetClass("cam", () => cam); // Treat camera object as a singleton (only one camera in scene)
+
+// Mouse-based Orbit controls
+
+type MoveCB = (dx: number, dy: number, ev: PointerEvent | null) => void;
+type RotateCB = (dx: number, dy: number, ev: PointerEvent | null) => void;
+type ZoomCB = (delta: number, ev: WheelEvent | null) => void;
+
+/**
+ * Canvas interaction → camera control bridge (debounced/throttled)
+ *
+ * Emits at ~10Hz:
+ *  - onMove(dx, dy)
+ *  - onRotate(dx, dy)
+ *  - onZoom(delta)
+ */
+export function attachCanvasControls(
+    canvas: HTMLCanvasElement,
+    {
+        onMove,
+        onRotate,
+        onZoom,
+    }: {
+        onMove?: MoveCB;
+        onRotate?: RotateCB;
+        onZoom?: ZoomCB;
+    },
+) {
+    let activePointerId: number | null = null;
+    let mode: "move" | "rotate" | null = null;
+
+    let lastX = 0;
+    let lastY = 0;
+
+    // Accumulators
+    let accDX = 0;
+    let accDY = 0;
+    let accZoom = 0;
+
+    let lastEvent: PointerEvent | null = null;
+    let lastWheelEvent: WheelEvent | null = null;
+
+    const INTERVAL = 100; // ms (~10 Hz)
+
+    // Emit loop
+    const interval = setInterval(() => {
+        if (mode === "move" && (accDX !== 0 || accDY !== 0)) {
+            onMove?.(accDX, accDY, lastEvent);
+            accDX = 0;
+            accDY = 0;
+        } else if (mode === "rotate" && (accDX !== 0 || accDY !== 0)) {
+            onRotate?.(accDX, accDY, lastEvent);
+            accDX = 0;
+            accDY = 0;
+        }
+
+        if (accZoom !== 0) {
+            onZoom?.(accZoom, lastWheelEvent);
+            accZoom = 0;
+        }
+    }, INTERVAL);
+
+    // Prevent context menu on right-click
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    canvas.addEventListener("pointerdown", (e) => {
+        if (activePointerId !== null) return;
+
+        if (e.button === 1) {
+            mode = "move";
+        } else if (e.button === 2) {
+            mode = "rotate";
+        } else {
+            return;
+        }
+
+        activePointerId = e.pointerId;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        accDX = 0;
+        accDY = 0;
+
+        canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", (e) => {
+        if (e.pointerId !== activePointerId || !mode) return;
+
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        accDX += dx;
+        accDY += dy;
+
+        lastEvent = e;
+    });
+
+    function endPointer(e: PointerEvent) {
+        if (e.pointerId !== activePointerId) return;
+
+        canvas.releasePointerCapture(e.pointerId);
+
+        activePointerId = null;
+        mode = null;
+    }
+
+    canvas.addEventListener("pointerup", endPointer);
+    canvas.addEventListener("pointercancel", endPointer);
+    canvas.addEventListener("pointerleave", endPointer);
+
+    // Scroll → zoom (accumulated)
+    canvas.addEventListener(
+        "wheel",
+        (e) => {
+            accZoom += e.deltaY;
+            lastWheelEvent = e;
+
+            e.preventDefault();
+        },
+        { passive: false },
+    );
+
+    // Optional cleanup if you ever need it
+    return () => {
+        clearInterval(interval);
+    };
+}
+
+attachCanvasControls($("#grid-container canvas")!, {
+    onMove(dx: number, dy: number) {
+        [dx, dy] = g.getGridPos(dx, dy, true);
+
+        const vec = cam.getPos();
+        const quat = cam.getPivot();
+
+        // Transform vec into cameraspace
+        vec.rotate(quat.clone().conjugate());
+
+        vec.x -= dx;
+        vec.y += dy;
+
+        // Transform vec back into worldspace
+        vec.rotate(quat);
+
+        cam.pos(vec);
+    },
+
+    onRotate(dx: number, dy: number) {
+        [dx, dy] = g.getGridPos(dx, dy, true);
+
+        // Fine-tuned values for making rotatin "feel" right
+        dx /= 10;
+        dy /= 10;
+
+        const quat = cam.getPivot();
+
+        const rotatorX = new Quat(0, -Math.sin(dx / 2), 0, Math.cos(dx / 2));
+        rotatorX.rotateBy(quat);
+        quat.copy(rotatorX);
+
+        const rotatorY = new Quat(-Math.sin(dy / 2), 0, 0, Math.cos(dy / 2));
+        quat.rotateBy(rotatorY);
+
+        cam.pivot(quat);
+    },
+
+    onZoom(delta: number) {
+        let { width, height } = cam.getSize();
+
+        if (delta < 0) {
+            width /= 1.1;
+            height /= 1.1;
+        } else {
+            width *= 1.1;
+            height *= 1.1;
+        }
+
+        // Constrain width/height to 254
+        if (width > 254) {
+            height = height * (254 / width);
+            width = 254;
+        }
+        if (height > 254) {
+            width = width * (254 / height);
+            height = 254;
+        }
+
+        cam.resize(width, height);
+    },
+});

@@ -23,5 +23,6 @@
             },
             "mode": "hhl"
         }
-    ]
+    ],
+    "tooltip": false
 }

@@ -1,4 +1,3 @@
-import grid from "./grid.html?raw";
 import "./grid.css";
 
 type grid_base = {
@@ -26,7 +25,10 @@ type grid_grid = {
     mode?: "vvl" | "vhl" | "hvl" | "hhl"; // (V)ertical/(H)orizontal bits in (V)ertical/(H)orizontal lines
 } & grid_base;
 
-type grid_setup = grid_base[];
+type grid_setup = {
+    config: grid_base[];
+    tooltip?: boolean;
+};
 
 type grid_bounds = {
     x: number;
@@ -34,6 +36,8 @@ type grid_bounds = {
     w: number;
     h: number;
 };
+
+import grid from "./grid.html?raw";
 
 export class Grid {
     private readonly element: HTMLElement;
@@ -77,7 +81,13 @@ export class Grid {
             this.removeTooltip.bind(this),
         );
 
-        for (const gridItem of setup) {
+        if (setup.tooltip === false) {
+            this.element
+                .querySelector<HTMLElement>(".grid-tooltip")
+                ?.classList?.add("hidden");
+        }
+
+        for (const gridItem of setup.config) {
             switch (gridItem.type) {
                 case "tile":
                     this.buildTile(gridItem as grid_tile);
@@ -333,16 +343,30 @@ export class Grid {
         }
     }
 
+    // Get position within grid units at x/y mouse coordinate
+    // Delta: If given, ignores the base canvas rotation, to be used with finding deltas in gridspace
+    getGridPos(x: number, y: number, delta = false): [x: number, y: number] {
+        let _x: number, _y: number;
+
+        if (delta) {
+            _x = x / this.scale;
+            _y = y / this.scale;
+        } else {
+            const base = this.canvas.getBoundingClientRect();
+
+            _x = (x - base.x) / this.scale + this.bounds.x;
+            _y = this.bounds.h - (y - base.y) / this.scale + this.bounds.y;
+        }
+
+        return [_x, _y];
+    }
+
     // Update position+text of tooltip
     private updateTooltip(event: PointerEvent) {
         const base = this.canvas.getBoundingClientRect();
 
         // Get normalized coords
-        const x = (event.clientX - base.x) / this.scale + this.bounds.x;
-        const y =
-            this.bounds.h -
-            (event.clientY - base.y) / this.scale +
-            this.bounds.y;
+        const [x, y] = this.getGridPos(event.clientX, event.clientY);
 
         let found: [idx: number, i: number] | null = null;
 

@@ -60,3 +60,7 @@
 .grid-tooltip .tooltip-state.off {
     color: #f44336; /* red dot for "off" */
 }
+
+.grid-tooltip.hidden {
+    display: none !important;
+}
