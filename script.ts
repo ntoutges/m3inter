@@ -444,7 +444,9 @@ function runCode() {
     }
 
     // Create new running environment
-    codeRunner = new Worker("./worker.ts", { type: "module" });
+    codeRunner = new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+    });
 
     const code = commandInput.value;
 
