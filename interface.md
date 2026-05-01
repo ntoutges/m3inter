@@ -76,6 +76,8 @@ Avaialble actions:
     - Set the position of the main camera
 - pivot `x, y, z, w`
     - Set the rotation of the main camera
+- resize `width, height`
+    - Change the width/height of the camera's rendered view
 
 ## RX
 

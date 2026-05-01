@@ -15,7 +15,6 @@ export function showToast(
     type: ToastType = "info",
     duration = 3000,
 ) {
-    console.log(duration);
     const node = toastTemplate.content.firstElementChild!.cloneNode(
         true,
     ) as HTMLElement;

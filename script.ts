@@ -221,12 +221,14 @@ function updateCam(e: Event) {
 
     const vec = cam.getPos();
     const quat = cam.getPivot();
+    let { width, height } = cam.getSize();
 
     // Transform vec into cameraspace
     vec.rotate(quat.clone().conjugate());
 
     let vecUpdated = false;
     let quatUpdated = false;
+    let scaleUpdated = false;
 
     const pivotStep = 5 * (Math.PI / 180);
 
@@ -234,8 +236,11 @@ function updateCam(e: Event) {
         case "reset":
             vec.copy(new Vec3(0, 0, 0));
             quat.copy(new Quat(0, 0, 0, 1));
+            width = 128;
+            height = 64;
             vecUpdated = true;
             quatUpdated = true;
+            scaleUpdated = true;
             break;
 
         case "forward":
@@ -310,6 +315,17 @@ function updateCam(e: Event) {
             quatUpdated = true;
             break;
         }
+
+        case "zoom-in":
+            width /= 1.1;
+            height /= 1.1;
+            scaleUpdated = true;
+            break;
+        case "zoom-out":
+            width *= 1.1;
+            height *= 1.1;
+            scaleUpdated = true;
+            break;
     }
 
     // Transform vec back into worldspace
@@ -317,6 +333,19 @@ function updateCam(e: Event) {
 
     if (vecUpdated) cam.pos(vec);
     if (quatUpdated) cam.pivot(quat);
+    if (scaleUpdated) {
+        // Constrain width/height to 254
+        if (width > 254) {
+            height = height * (254 / width);
+            width = 254;
+        }
+        if (height > 254) {
+            width = width * (254 / height);
+            height = 254;
+        }
+
+        cam.resize(width, height);
+    }
 }
 
 // Render camera

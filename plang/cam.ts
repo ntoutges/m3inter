@@ -18,6 +18,9 @@ export class CamInteractor extends Interactor {
     private readonly _quat: Quat = new Quat(0, 0, 0, 1);
     private readonly _listeners: (() => void)[] = [];
 
+    private _width: number = 128;
+    private _height: number = 64;
+
     constructor() {
         super("cam");
 
@@ -80,12 +83,29 @@ export class CamInteractor extends Interactor {
         );
     }
 
+    async resize(width: number, height: number) {
+        this._width = Math.min(Math.max(width, 1), 254);
+        this._height = Math.min(Math.max(height, 1), 254);
+
+        this._listeners.forEach((l) => l());
+
+        await this.cmd(
+            "resize",
+            Math.round(this._width),
+            Math.round(this._height),
+        );
+    }
+
     getPos() {
         return this._pos.clone();
     }
 
     getPivot() {
         return this._quat.clone();
+    }
+
+    getSize() {
+        return { width: this._width, height: this._height };
     }
 
     onChange(cb: () => void) {
@@ -109,14 +129,14 @@ export class PCamInteractor extends PuppetInteractor {
      */
     pos(x: number, y: number, z: number): Promise<void>;
     pos(vec: Vec3): Promise<void>;
-    async pos(xOrVec: number | Vec3, y?: number, z?: number): Promise<void> {
+    pos(xOrVec: number | Vec3, y?: number, z?: number): Promise<void> {
         if (xOrVec instanceof Vec3) {
             z = xOrVec.z;
             y = xOrVec.y;
             xOrVec = xOrVec.x;
         }
 
-        this.call("pos", xOrVec, y, z);
+        return this.call("pos", xOrVec, y, z);
     }
 
     /**
@@ -124,7 +144,7 @@ export class PCamInteractor extends PuppetInteractor {
      */
     pivot(x: number, y: number, z: number, w: number): Promise<void>;
     pivot(quat: Quat): Promise<void>;
-    async pivot(
+    pivot(
         xOrQuat: number | Quat,
         y?: number,
         z?: number,
@@ -137,12 +157,16 @@ export class PCamInteractor extends PuppetInteractor {
             xOrQuat = xOrQuat.x;
         }
 
-        this.call("pivot", xOrQuat, y, z, w);
+        return this.call("pivot", xOrQuat, y, z, w);
+    }
+
+    resize(width: number, height: number) {
+        return this.call("resize", width, height);
     }
 
     // UNOFFICIAL COMMAND
     clear() {
-        this.call("clear");
+        return this.call("clear");
     }
 }
 
