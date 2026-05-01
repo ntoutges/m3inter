@@ -261,7 +261,7 @@ function execResolve(
     req.resolve(error ? null : status);
     outstanding.delete(id);
 
-    console.log(`RESOLVE ${id}`);
+    // console.log(`RESOLVE ${id}`);
     return performance.now() - req.dispatch;
 }
 

@@ -59,11 +59,11 @@ conn.show();
 
 onTx((b) => {
     cHandle?.write(b);
-    console.log(
-        `TX: ${Array.from(b)
-            .map((x) => String.fromCharCode(x))
-            .join("")}`,
-    );
+    // console.log(
+    //     `TX: ${Array.from(b)
+    //         .map((x) => String.fromCharCode(x))
+    //         .join("")}`,
+    // );
 });
 
 const cam = new CamInteractor();
