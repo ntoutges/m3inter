@@ -1,6 +1,7 @@
 {
     "scripts": {
-        "dev": "vite"
+        "dev": "vite",
+        "build": "vite build"
     },
     "devDependencies": {
         "@types/w3c-web-serial": "^1.0.8",
