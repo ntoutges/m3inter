@@ -440,7 +440,7 @@ if (preset === null)
     commandInput.value = localStorage.getItem("command-input") ?? "";
 // Fetch preset list
 else {
-    fetch("/presets.json")
+    fetch(new URL("/presets.json", import.meta.url))
         .then((v) => v.json())
         .then((presets) => {
             if (!Object.hasOwn(presets, preset)) {
