@@ -1,0 +1,11 @@
+/**
+ * Develop scene setup commands in a type-aware engironment
+ */
+
+// Import exposed global variables
+import { env } from "./executor.js";
+const { OBJ, SEG, VEC, QUAT, sleep, clear, cam, FULL, DIM, DARK, INVISIBLE } =
+    env;
+
+// Workspace to develop the scene
+async function main() {}

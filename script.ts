@@ -274,22 +274,26 @@ function updateCam(e: Event) {
         case "yaw-left": {
             const rotator = new Quat(
                 0,
-                -Math.sin(pivotStep / 2),
+                Math.sin(pivotStep / 2),
                 0,
                 Math.cos(pivotStep / 2),
             );
-            quat.rotateBy(rotator);
+
+            rotator.rotateBy(quat);
+            quat.copy(rotator);
             quatUpdated = true;
             break;
         }
         case "yaw-right": {
             const rotator = new Quat(
                 0,
-                Math.sin(pivotStep / 2),
+                -Math.sin(pivotStep / 2),
                 0,
                 Math.cos(pivotStep / 2),
             );
-            quat.rotateBy(rotator);
+
+            rotator.rotateBy(quat);
+            quat.copy(rotator);
             quatUpdated = true;
             break;
         }
@@ -423,13 +427,38 @@ cam.onChange(() => {
 
 // Code editing
 
+const preset = new URL(location.href).searchParams.get("preset") || null;
+
 // Save in-progress commands before reloading
 window.addEventListener("beforeunload", () => {
-    localStorage.setItem("command-input", commandInput.value);
+    if (preset === null)
+        localStorage.setItem("command-input", commandInput.value);
 });
 
 // Load in-progress commands after loading
-commandInput.value = localStorage.getItem("command-input") ?? "";
+if (preset === null)
+    commandInput.value = localStorage.getItem("command-input") ?? "";
+// Fetch preset list
+else {
+    fetch("/presets.json")
+        .then((v) => v.json())
+        .then((presets) => {
+            if (!Object.hasOwn(presets, preset)) {
+                toast.warn(`Unable to find preset "${preset}"`);
+                toast.info(
+                    `Available presets: [ ${Object.keys(presets).join(", ")} ]`,
+                    0,
+                );
+            }
+
+            // Load preset
+            commandInput.value = presets[preset];
+            toast.info(`Successfully loadedp preset "${preset}"`, 5000);
+        })
+        .catch((err) => {
+            toast.error("Failed to fetch presets...", 0);
+        });
+}
 
 // Run commands
 commandButton.addEventListener("click", runCode);

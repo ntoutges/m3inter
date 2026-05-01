@@ -28,6 +28,8 @@ const VEC = (x: number, y: number, z: number) => new Vec3(x, y, z);
 const QUAT = (x: number, y: number, z: number, w: number) =>
     new Quat(x, y, z, w);
 
+QUAT.fromDirection = Quat.fromDirection;
+
 /**
  * Sleep for some number of ms
  * @param ms
@@ -43,7 +45,7 @@ function clear() {
     cam.clear();
 }
 
-const env = {
+export const env = {
     OBJ,
     SEG,
     VEC,

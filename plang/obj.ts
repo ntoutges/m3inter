@@ -126,8 +126,8 @@ export class ObjInteractor extends Interactor {
     private async _rlock(x: boolean, y: boolean): Promise<void> {
         const rlock = (x ? "x" : "") + (y ? "y" : "");
 
-        if (rlock) await this.cmd("visible", `-${rlock}`);
-        else await this.cmd("visible");
+        if (rlock) await this.cmd("rlock", this._id(), `-${rlock}`);
+        else await this.cmd("rlock", this._id());
     }
 
     private async _clear(): Promise<void> {
@@ -156,7 +156,7 @@ export class PObjInteractor extends PuppetInteractor {
         return this.call("id");
     }
 
-    async parent(other: ObjInteractor | number) {
+    async parent(other: PObjInteractor | number) {
         const id = typeof other === "number" ? other : await other.id();
         return await this.call("parent", id);
     }
@@ -195,7 +195,7 @@ export class PObjInteractor extends PuppetInteractor {
         return this.call("visible", visible);
     }
 
-    rlock(x: boolean, y: boolean, z: boolean) {
+    rlock(x: boolean, y: boolean) {
         return this.call("rlock", x, y);
     }
 
